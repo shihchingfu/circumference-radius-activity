@@ -1,0 +1,90 @@
+---
+title: "Circumferences and Diameters"
+author: "Takari Primary School, Year 4/5"
+format: html
+self-contained: true
+---
+
+```{r}
+#| message: false
+library(googlesheets4)
+library(dplyr)
+library(ggplot2)
+library(gt)
+
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1bksGyGA3EwGqtk28JD_4kEl3sccoPlKQ05yoW6J4ZK0/edit#gid=1380425156"
+```
+
+```{r}
+#| message: false
+circles_data <- read_sheet(SHEET_URL,
+                           col_names = c("Group", 
+                                         "Object", "Diameter", "Circumference",
+                                         "Difficulty"),
+                           col_types = "cciii",
+                           range = "B2:F",
+                           skip = 1) |> 
+  mutate(Ratio = Circumference/Diameter)
+
+circles_data |> 
+  gt()
+```
+
+```{r}
+circles_data |> 
+  count(Object) |> 
+  gt()
+```
+
+
+```{r}
+circles_data |> 
+  ggplot() +
+  aes(x = Diameter) +
+  geom_dotplot(binwidth = 10, fill = "blue") +
+  labs(title = "Dotplot of Circle Diameters", x = "Diameter (mm)") +
+  scale_y_continuous(NULL, breaks = NULL) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+circles_data |> 
+  ggplot() +
+  aes(x = Circumference) +
+  geom_dotplot(binwidth = 30, fill = "green") +
+  labs(title = "Dotplot of Circle Circumferences", x = "Circumference (mm)") +
+  scale_y_continuous(NULL, breaks = NULL) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+circles_data |> 
+  ggplot() +
+  aes(x = Ratio) +
+  geom_histogram(bins = 30, fill = "grey") +
+  geom_vline(xintercept = pi, colour = "red", linewidth = 1, linetype = "dotted") +
+  labs(title = "Histogram of Circumference/Diameter", x = "Ratio", y = "Count") +
+  #scale_y_continuous(NULL, breaks = NULL) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+circles_data |> 
+  ggplot() +
+  aes(x = Ratio) +
+  geom_density() +
+  geom_vline(xintercept = pi, colour = "red", linewidth = 1, linetype = "dotted") +
+  labs(title = "Density of Circumference/Diameter", x = "Ratio", y = "Density") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+
+
+
