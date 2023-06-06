@@ -16,7 +16,7 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1bksGyGA3EwGqtk28JD_4kEl3scc
 ```
 
 ```{r}
-#| message: false
+#| message: true
 circles_data <- read_sheet(SHEET_URL,
                            col_names = c("Group", 
                                          "Object", "Diameter", "Circumference",
@@ -25,7 +25,9 @@ circles_data <- read_sheet(SHEET_URL,
                            range = "B2:F",
                            skip = 1) |> 
   mutate(Ratio = Circumference/Diameter)
+```
 
+```{r}
 circles_data |> 
   gt()
 ```
@@ -71,6 +73,21 @@ circles_data |>
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
+
+
+```{r}
+circles_data |> 
+  ggplot() +
+  aes(x = Diameter, y = Circumference) +
+  geom_jitter(mapping = aes(colour = Object), size = 5, alpha = 0.5) +
+  geom_smooth(method = "lm", formula = "y ~ x", se = FALSE, colour = "black") +
+  lims(x = c(0,270), y = c(0,800)) +
+  labs(title = "Plot of Circumference vs Diameter", x = "Diameter (mm)", y = "Circumference (mm)") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
 
 ```{r}
 circles_data |> 
