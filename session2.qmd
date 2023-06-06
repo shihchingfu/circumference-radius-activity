@@ -1,0 +1,50 @@
+---
+title: "Pi Measuring (Session 2)"
+author: "Takari Primary School, Year 4/5"
+date: "8 June 2023"
+format: html
+self-contained: true
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gt)
+library(latex2exp)
+
+circles_data <- readRDS(file = "data/circles_data.RDS") |> 
+    mutate(Ratio = Circumference/Diameter)
+```
+
+```{r}
+circles_data |> 
+  ggplot() +
+  aes(x = Ratio) +
+  geom_histogram(bins = 30, fill = "brown", colour = "black") +
+  geom_vline(aes(xintercept = mean(Ratio)), colour = "red", linetype = "dashed") +
+  #geom_vline(xintercept = pi, colour = "red", linetype = "dotted") +
+  labs(title = "Histogram of Circumference/Diameter", x = "Ratio", y = "Count") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+circles_data |> 
+  ggplot() +
+  aes(x = Ratio) +
+  geom_density(fill = "goldenrod", colour = "black") +
+  geom_vline(aes(xintercept = mean(Ratio)), colour = "red", linetype = "dashed") +
+  #geom_vline(xintercept = pi, colour = "red", linetype = "dotted") +
+  labs(title = "Distribution of Circumference/Diameter", x = "Ratio", y = "Density") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+```{r}
+circles_lm <- lm(Circumference ~ Diameter, data = circles_data)
+summary(circles_lm)
+```
+
+
