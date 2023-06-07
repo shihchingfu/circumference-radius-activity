@@ -6,36 +6,265 @@ format: html
 self-contained: true
 ---
 
-```{r}
+```{r, setup}
+#| message: false
+#| include: false
+library(googlesheets4)
 library(dplyr)
 library(ggplot2)
 library(gt)
+library(readr)
 library(latex2exp)
+library(readxl)
 
-circles_data <- readRDS(file = "data/circles_data.RDS") |> 
-    mutate(Ratio = Circumference/Diameter)
+knitr::opts_chunk$set(
+  echo = FALSE
+)
+
 ```
+
+```{r}
+column_names <- c("Group", "Object", "Diameter", "Circumference", "Difficulty")
+column_types = c("skip", "text", "text", "numeric", "numeric", "numeric")
+
+circles_data <- read_excel(path = "data/takari_cleaned_2023-06-07.xlsx",,
+                           col_names = column_names, col_types = column_types,
+                           skip = 1) |> 
+  na.omit() |> 
+  slice(-35) |> 
+  mutate(Ratio = Circumference/Diameter,
+         Diameter = Diameter/10,
+         Circumference = Circumference/10)
+```
+
+# Results
+
+## Tables
+
+We can report all of our observations in one big table but it isn't very convenient to read or see any patterns!
+
+```{r}
+circles_data |> 
+  select(-Ratio) |> 
+  gt() |>
+  tab_header(
+    title = "All Observations"
+  ) |> 
+  cols_label(
+    Diameter = html("Diameter<br>(cm)"),
+    Circumference = html("Circumference<br>(cm)"),
+    Difficulty = html("Difficulty<br>(1 to 10)")) |> 
+  cols_align(
+    align = "center",
+    columns = c(Diameter, Circumference, Difficulty)
+  )
+```
+
+Because we noted down the name of the object that we were measuring, we could also count how many times each object was measured.
+
+**Q: Which object was the most measured?**
+
+```{r}
+circles_data |> 
+  group_by(Object) |> 
+  summarise(Count = n()) |> 
+  arrange(desc(Count)) |> 
+  gt(rowname_col = "Object") |>
+  cols_align(
+    align = "center",
+    columns = Count
+  ) |> 
+  tab_header(
+    title = "Number of Observations per Object"
+  ) |> 
+  grand_summary_rows(
+    columns = Count,
+    fns = list(Total ~ sum(.))
+  )
+```
+
+We can do the same thing but for the groups.
+
+**Q: Which group measured the most objects?**
+
+```{r}
+circles_data |> 
+  group_by(Group) |> 
+  summarise(Count = n()) |> 
+  arrange(desc(Count)) |> 
+  gt(rowname_col = "Group") |>
+  cols_align(
+    align = "center",
+    columns = Count
+  ) |> 
+  tab_header(
+    title = "Number of Observations per Group"
+  ) |> 
+  grand_summary_rows(
+    columns = Count,
+    fns = list(Total ~ sum(.))
+  )
+```
+
+
+## Plots
+
+Let's look at the range of diameters of the objects we measured. We can do this by making a "dotplot".
+
+```{r}
+circles_data |> 
+  ggplot() +
+  aes(x = Diameter) +
+  geom_dotplot(binwidth = 1, fill = "red") +
+  #geom_vline(aes(xintercept = mean(Diameter, na.rm = TRUE)), linetype = "dashed") +
+  labs(title = "Dot plot of Circle Diameters", x = "Diameter (cm)") +
+  scale_y_continuous(NULL, breaks = NULL) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+The dashed red line is the average or "mean" of the diameters. You can think of this as the middle of all the measurements. We have a very big range of diameters from around 15mm up to 250mm.
+
+Now let's look at the circumferences.
+
+```{r}
+circles_data |> 
+  ggplot() +
+  aes(x = Circumference) +
+  geom_dotplot(binwidth = 3, fill = "mediumseagreen") +
+  #geom_vline(aes(xintercept = mean(Circumference)), linetype = "dashed") +
+  labs(title = "Dot plot of Circle Circumferences", x = "Circumference (cm)") +
+  scale_y_continuous(NULL, breaks = NULL) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+**Q: Does this dotplot look similar to the one for diameters?**
+
+The range of circumferences goes from about 5cm to 80cm.
+
+
+```{r}
+circles_data |> 
+  filter(Object == "Tin of Tuna")  |> 
+  ggplot() +
+  aes(x = Diameter) +
+  geom_dotplot(binwidth = 0.3, fill = "lightblue") +
+  labs(title = "Dot plot of Tuna Tin Diameters", x = "Diameter (cm)") +
+  scale_y_continuous(NULL, breaks = NULL) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+The last question on the form was about difficulty.
+
+**Q: Which object do you think most groups found the hardest to measure?**
+
+```{r fig.asp=1}
+circles_data |> 
+  ggplot() +
+  aes(y = Object, x = Difficulty, colour = Object) +
+  geom_jitter(height = 0, width = 1, size = 5, alpha = 0.4) +
+  guides(col = guide_legend(nrow = 5)) +
+  labs(title = "Strip plot of Object Measuring Difficulty") +
+  scale_x_continuous(breaks = seq(1,10)) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5),
+        #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none")
+```
+
+The very last plot will help us answer our hypothesis about whether we can tell the circumference of a circle if we know its diameter.
+
+We'll take a quick look now but talk more about it next time.
+
+```{r fig.asp=1}
+circles_data |> 
+  ggplot() +
+  aes(x = Diameter, y = Circumference) +
+  geom_point(mapping = aes(colour = Object), size = 5, alpha = 0.4) +
+  coord_cartesian(xlim = c(0,27), ylim = c(0,80), expand = FALSE) +
+  labs(title = "Scatter plot of Circumference vs Diameter", colour = "",
+       x = "Diameter (cm)", y = "Circumference (cm)") +
+  guides(col = guide_legend(nrow = 5)) +
+  theme_linedraw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "bottom")
+```
+
+
+```{r fig.asp=1}
+circles_data |> 
+  ggplot() +
+  aes(x = Diameter, y = Circumference) +
+  geom_point(mapping = aes(colour = Object), size = 5, alpha = 0.2) +
+  #geom_abline(aes(slope = pi, intercept = 0), colour = "red") +
+  geom_smooth(method = "lm", formula = "y ~ 0 + x", se = FALSE, colour = "blue") +
+  coord_cartesian(xlim = c(0,27), ylim = c(0,80), expand = FALSE) +
+  labs(title = "Scatter plot of Circumference vs Diameter", colour = "",
+       x = "Diameter (cm)", y = "Circumference (cm)") +
+  guides(col = guide_legend(nrow = 5)) +
+  theme_linedraw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "bottom")
+```
+
+```{r fig.asp=1}
+circles_data |> 
+  ggplot() +
+  aes(x = Diameter, y = Circumference) +
+  geom_point(mapping = aes(colour = Object), size = 5, alpha = 0.2) +
+  #geom_abline(aes(slope = pi, intercept = 0), colour = "red") +
+  geom_smooth(method = "lm", formula = "y ~ 0 + x", se = FALSE, colour = "blue") +
+  coord_cartesian(xlim = c(0,27), ylim = c(0,80), expand = FALSE) +
+  labs(title = "Scatter plot of Circumference vs Diameter", colour = "",
+       x = "Diameter (cm)", y = "Circumference (cm)") +
+  guides(col = guide_legend(nrow = 5)) +
+  theme_linedraw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "bottom")
+```
+
 
 ```{r}
 circles_data |> 
   ggplot() +
   aes(x = Ratio) +
-  geom_histogram(bins = 30, fill = "brown", colour = "black") +
-  geom_vline(aes(xintercept = mean(Ratio)), colour = "red", linetype = "dashed") +
-  #geom_vline(xintercept = pi, colour = "red", linetype = "dotted") +
-  labs(title = "Histogram of Circumference/Diameter", x = "Ratio", y = "Count") +
+  geom_dotplot(binwidth = 0.15, fill = "lightgreen") +
+  #geom_vline(aes(xintercept = mean(Ratio, na.rm = TRUE)), colour = "red", linetype = "dashed") +
+  labs(title = TeX("Dotplot of Circumference $\\div$ Diameter"), x = TeX("Circumference $\\div$ Diameter")) +
+  scale_y_continuous(NULL, breaks = NULL) +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
+mode_x <- hist(circles_data$Ratio, plot = FALSE, breaks = 40)$breaks[which.max(hist(circles_data$Ratio, plot = FALSE, breaks = 40)$counts) + 1]
+
+circles_data |> 
+  ggplot() +
+  aes(x = Ratio) +
+  geom_histogram(bins = 40, fill = "pink", colour = "black") +
+  geom_vline(aes(xintercept = mode_x), colour = "red", linetype = "dashed") +
+  labs(title = TeX("Histogram of Circumference $\\div$ Diameter"), 
+       x = TeX("Circumference $\\div$ Diameter"), y = "Count") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+peak_x <- density(circles_data$Ratio)$x[which.max(density(circles_data$Ratio)$y)]
+
 circles_data |> 
   ggplot() +
   aes(x = Ratio) +
   geom_density(fill = "goldenrod", colour = "black") +
-  geom_vline(aes(xintercept = mean(Ratio)), colour = "red", linetype = "dashed") +
-  #geom_vline(xintercept = pi, colour = "red", linetype = "dotted") +
-  labs(title = "Distribution of Circumference/Diameter", x = "Ratio", y = "Density") +
+  geom_vline(aes(xintercept = peak_x), colour = "red", linetype = "dashed") +
+#  geom_vline(xintercept = pi, colour = "red", linetype = "dotted") +
+  labs(title = TeX("Histogram of Circumference $\\div$ Diameter"), 
+       x = TeX("Circumference $\\div$ Diameter"), y = "Density") +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
@@ -43,8 +272,11 @@ circles_data |>
 
 
 ```{r}
-circles_lm <- lm(Circumference ~ Diameter, data = circles_data)
-summary(circles_lm)
+library(lmerTest)
+
+circles_lmer <- lmer(Circumference ~ Diameter + (1|Object), data = circles_data)
+summary(circles_lmer)
 ```
+
 
 
