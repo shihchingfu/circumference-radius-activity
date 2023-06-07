@@ -17,7 +17,8 @@ library(readr)
 library(latex2exp)
 
 knitr::opts_chunk$set(
-  echo = FALSE
+  echo = FALSE,
+  warning = FALSE
 )
 
 USE_PREMADE_DATA <- FALSE
@@ -26,6 +27,7 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1bksGyGA3EwGqtk28JD_4kEl3scc
 ```
 
 ```{r}
+#| message: false
 column_names <- c("Group", "Object", "Diameter", "Circumference", "Difficulty")
 column_types = "cciii"
 
@@ -44,6 +46,8 @@ saveRDS(circles_data, file = "data/circles_data.RDS")
 ```
 
 # Results
+
+In this section we summarise the results of our experiment using tables and plots. Both are useful ways for displaying data.
 
 ## Tables
 
