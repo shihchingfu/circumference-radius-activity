@@ -47,6 +47,8 @@ saveRDS(circles_data, file = "data/circles_data.RDS")
 
 # Results
 
+In this section we summarise the results of our experiment using tables and plots. Both are useful ways for displaying data.
+
 ## Tables
 
 We can report all of our observations in one big table but it isn't very convenient to read or see any patterns!
